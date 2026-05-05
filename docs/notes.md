@@ -33,4 +33,24 @@ Is making the block to be marked reusable. Memory won't return to OS immediately
 | realloc  | Resize allocation             |
 | free     | Return it to allocator        |
 
+# mmap()
 
+``` c
+#include <sys/mman.h>
+
+void *mmap(size_t length;
+                  void addr[length], size_t length, int prot, int flags,
+                  int fd, off_t offset);
+int munmap(size_t length;
+                  void addr[length], size_t length);
+```
+
+Creates a new mapping in the virtual memory.
+
+Starting address is passed to `addr`, and `length` tells exactly how much size it should be (it should be above 0), fd is for file descriptor, prot for memory protection.
+
+I'll be using MEM_ANONYMOUS for flag cause I just want raw memory address. 
+
+and **`munmap`** are for freeing the memory acquired by mmap().
+
+mmap() returns a pointer if successful and -1 if not (which means it doesn't have NULL). 
