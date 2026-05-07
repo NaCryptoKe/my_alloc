@@ -1,66 +1,80 @@
-#include <err.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <string.h>
 #include <unistd.h>
+#include <sys/mman.h>
 
-int main(int argc, char *argv[]) {
-    int         fd;
-    char        *addr;
-    off_t       offset, pa_offset;
-    size_t      length;
-    ssize_t     s;
-    struct stat sb;
+int main() {
+    // ============================
+    // 1. Using sbrk() — the old way
+    // ============================
+    // sbrk(increment) adjusts the "program break" (end of data segment).
+    // The return value is the PREVIOUS break address, i.e., the start of
+    // the newly allocated region if increment > 0.
 
-    if (argc < 3 || argc > 4) {
-        fprintf(stderr, "%s file offset [length]\n", argv[0]);
+    printf("=== sbrk / brk ===\n");
+    // Get current break.
+    void *initial_break = sbrk(0);
+    printf("Initial program break: %p\n", initial_break);
+
+    // Extend the data segment by exactly 16 bytes.
+    // In practice, the kernel may round up to page boundary, but sbrk
+    // still gives you a pointer that's usable for 16 bytes (the extra
+    // space is just wasted / could be used later).
+    void *brk_region = sbrk(16);
+    if (brk_region == (void*)-1) {
+        perror("sbrk");
         exit(EXIT_FAILURE);
     }
+    printf("Allocated 16 bytes at:  %p (via sbrk)\n", brk_region);
+    printf("New program break:       %p\n", sbrk(0));
 
-    fd = open(argv[1], O_RDONLY);
-    if (fd == -1)
-        err(EXIT_FAILURE, "open");
+    // Write the 16 bytes to prove it's usable.
+    memset(brk_region, 0xAB, 16);
+    printf("First byte: 0x%X\n", ((unsigned char*)brk_region)[0]);
 
-    if (fstat(fd, &sb) == -1)       // to obtain file size
-        err(EXIT_FAILURE, "fstat");
+    // Note: you cannot free this memory individually — sbrk is a contiguous
+    // arena. Memory allocators (malloc) usually reserve a large chunk with
+    // sbrk and manage it internally, only releasing back via negative sbrk
+    // when the entire top of the heap is free.
 
-    offset = atoi(argv[2]);
-    pa_offset = offset & ~(sysconf(_SC_PAGE_SIZE) - 1);     // offset for mmap() must be page aligned
-    
-    if (offset >= sb.st_size) {
-        fprintf(stderr, "offset is past end file\n");
+    // ============================
+    // 2. Using mmap() — modern, flexible
+    // ============================
+    printf("\n=== mmap ===\n");
+    // mmap can map a new anonymous (not backed by a file) memory region.
+    // We request exactly 16 bytes, but the kernel will give an entire page
+    // (4096 bytes typically). The extra bytes are accessible but wasteful.
+    void *mmap_region = mmap(NULL,                     // let kernel choose address
+                             16,                       // requested size
+                             PROT_READ | PROT_WRITE,   // permissions
+                             MAP_PRIVATE | MAP_ANONYMOUS, // not shared, no file
+                             -1,                       // fd (ignored)
+                             0);                       // offset (ignored)
+    if (mmap_region == MAP_FAILED) {
+        perror("mmap");
         exit(EXIT_FAILURE);
     }
+    printf("Mapped 16 bytes at:  %p (via mmap)\n", mmap_region);
 
-    if (argc == 4) { 
-        length = atoi(argv[3]);
-        if (offset + length > sb.st_size)
-                   length = sb.st_size - offset;
-                       /* Can't display bytes past end of file */
+    // Use the memory.
+    memset(mmap_region, 0xCD, 16);
+    printf("First byte: 0x%X\n", ((unsigned char*)mmap_region)[0]);
 
-           } else {    /* No length arg ==> display to end of file */
-               length = sb.st_size - offset;
-           }
+    // You can later return this memory to the OS independently using munmap.
+    munmap(mmap_region, 16);
 
-           addr = mmap(NULL, length + offset - pa_offset, PROT_READ,
-                       MAP_PRIVATE, fd, pa_offset);
-           if (addr == MAP_FAILED)
-               err(EXIT_FAILURE, "mmap");
+    // ============================
+    // 3. Summary for a custom malloc
+    // ============================
+    printf("\n=== Key differences for allocator design ===\n");
+    printf("- sbrk gives a contiguous heap that can only grow/shrink at the end.\n");
+    printf("  Good for a classic dlmalloc-style allocator (small blocks).\n");
+    printf("- mmap gives independent chunks that can be freed in any order.\n");
+    printf("  Essential for large blocks and per-thread arenas.\n");
+    printf("- Both round up to page size, so for tiny (16-byte) requests,\n");
+    printf("  your allocator should carve them out of a larger chunk,\n");
+    printf("  not call the kernel for each one.\n");
 
-           s = write(STDOUT_FILENO, addr + offset - pa_offset, length);
-           if (s != length) {
-               if (s == -1)
-                   err(EXIT_FAILURE, "write");
-
-               fprintf(stderr, "partial write");
-               exit(EXIT_FAILURE);
-           }
-
-           munmap(addr, length + offset - pa_offset);
-           close(fd);
-
-           exit(EXIT_SUCCESS);
+    return 0;
 }
