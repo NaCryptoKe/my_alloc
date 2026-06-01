@@ -10,10 +10,13 @@ void* my_sbrk_alloc(int size) {
 
     block_t *header_ptr = (block_t *) additional;     // This is telling the comiler to basically act as if this was a beginning of a block_t struct
 
-    header_ptr->size = size;
-    header_ptr->is_free = 0;
+    header_ptr->size_and_flag = size | FREE_MASK;
     header_ptr->next = NULL;
     header_ptr->prev = NULL;
 
     return (void *) (header_ptr + 1);
+}
+
+uintptr_t mem() {
+    return (uintptr_t)sbrk(0);
 }
