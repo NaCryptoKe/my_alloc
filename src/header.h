@@ -9,6 +9,7 @@
 
 #define FREE_MASK 0x1
 #define SIZE_MASK (~(size_t)0x1)    // clears the lowest bit
+                                    
 typedef struct block {
     size_t size_and_flag;       // Stores both size and free flag to save space.
     struct block* prev;
@@ -17,7 +18,12 @@ typedef struct block {
     char data[];
 } block_t;
 
-void* my_sbrk_alloc(int size);
+static block_t *heap_head = NULL;
+
+void* my_sbrk_alloc(size_t size);
+int size(void *payload_ptr);
+int is_free(void *payload_ptr);
 uintptr_t mem();
+void my_free(void *payload_ptr);
 
 #endif
