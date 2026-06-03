@@ -18,7 +18,7 @@ typedef struct block {
     char data[];
 } block_t;
 
-static block_t *heap_head = NULL;
+extern block_t *heap_head = NULL;
 
 void* my_sbrk_alloc(size_t size);
 int size(void *payload_ptr);

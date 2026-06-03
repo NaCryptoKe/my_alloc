@@ -9,28 +9,17 @@ int main() {
     uintptr_t start = mem();
     printf("Initial program break: %p\n", start);
 
-    int *arr = my_sbrk_alloc(100 * sizeof(int));
+    int *a = my_sbrk_alloc(40);
+    int *b = my_sbrk_alloc(64);
+    int *c = my_sbrk_alloc(32);
 
-    uintptr_t end = mem();
-    printf("Current program break: %p, size of header: %d, size: %d, is_free: %d\n", end, sizeof(block_t), size(arr), is_free(arr));
+    my_free(b);
+    block_t *h = ((block_t *)a) - 1;
+    printf ("Size of a: %zu\n", h->size_and_flag & SIZE_MASK);
 
-    for (int i = 0; i < 10; i++) {
-        arr[i] = i * 10;
-    }
-    for (int i = 0; i < 10; i++) {
-        printf ("%d\n", arr[i]);
-    }
-    my_free(arr);
-
-    uintptr_t last = mem();
-    printf("Initial program break: %p\n", last);
-    int *arr1 = my_sbrk_alloc(4 * sizeof(int));
-    int *arr2 = my_sbrk_alloc(3 * sizeof(int));
-    int *arr3 = my_sbrk_alloc(2 * sizeof(int));
-    int *arr4 = my_sbrk_alloc(1 * sizeof(int));
-
-    for (int i = 0; i < 10; i++) {
-        printf ("%d\n", arr1[i]);
-    }
+    my_free(a);
+    h = ((block_t *)a) - 1;
+    printf ("Size of a: %zu\n", h->size_and_flag & SIZE_MASK);
+    
     return 0;
 }

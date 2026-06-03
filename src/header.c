@@ -1,5 +1,7 @@
 #include "header.h"
 
+block_t *heap_head = NULL;
+
 void* my_sbrk_alloc(size_t size) {
 
     block_t *current = heap_head;
@@ -74,9 +76,22 @@ uintptr_t mem() {
 }
 
 void my_free(void *payload_ptr) {
-    if (payload_ptr == NULL)
-        return;
+    if (payload_ptr == NULL)    return;
 
-    block_t *header_ptr         =   ((block_t *)payload_ptr) - 1;
-    header_ptr->size_and_flag   =   header_ptr->size_and_flag | FREE_MASK;
+    block_t *blk         =   ((block_t *)payload_ptr) - 1;
+    blk->size_and_flag   =   blk->size_and_flag | FREE_MASK;
+
+    // forward coalescing
+    if (blk -> next && (blk->next->size_and_flag & FREE_MASK)) {
+        blk->size_and_flag += sizeof(block_t) + (blk->next->size_and_flag & SIZE_MASK);
+        blk->next = blk->next->next;
+        if (blk->next) blk->next->prev = blk;
+    }
+
+    // backward coalescing
+    if (blk->prev && (blk->prev->size_and_flag & FREE_MASK)) {
+        blk->prev->size_and_flag += sizeof(block_t) + (blk->size_and_flag & SIZE_MASK);
+        blk->prev->next = blk->next;
+        if(blk->next) blk->next->prev = blk->prev;
+    }
 }
