@@ -10,7 +10,7 @@ void stress_test() {
 
     // Allocating 100 blocks of differing sizes
     for(int i = 0; i < SIZE; i++) {
-        ptrs[i] = my_sbrk_alloc((i % 8 + 1) * 8);   // sizes go 8, 16, 24 ...
+        ptrs[i] = my_malloc((i % 8 + 1) * 8);   // sizes go 8, 16, 24 ...
         assert(ptrs[i] != NULL);
     }
     printf("100 allocations: OK\n");
@@ -24,7 +24,7 @@ void stress_test() {
 
     // reallocating to the freed slots -- must always prints REUSED not NEW CARV
     for (int i = 0; i < SIZE; i+=2) {
-        ptrs[i] = my_sbrk_alloc(8);     // making sure the new allocation is small enough to fit into any freed space
+        ptrs[i] = my_malloc(8);     // making sure the new allocation is small enough to fit into any freed space
         assert(ptrs[i] != NULL);
     }
     printf("50 reallocations: OK\n");

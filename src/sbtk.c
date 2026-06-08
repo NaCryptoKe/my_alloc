@@ -6,7 +6,10 @@
 #include "test.h"
 
 int main() {
-    stress_test();
+    //stress_test();
+    int *arr = my_malloc(5*sizeof(int));
+    printf("%d\n", arr[0]);
     
+    arr = realloc(arr, 20 * sizeof(int));
     return 0;
 }

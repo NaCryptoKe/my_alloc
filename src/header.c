@@ -2,7 +2,7 @@
 
 block_t *heap_head = NULL;
 
-void* my_sbrk_alloc(size_t size) {
+void* my_malloc(size_t size) {
 
     block_t *current = heap_head;
     while (current != NULL) {
@@ -26,7 +26,6 @@ void* my_sbrk_alloc(size_t size) {
                 current -> size_and_flag &= ~FREE_MASK;
             }
 
-            printf("REUSED\n");
             return (void *)(current + 1);
         }
 
@@ -55,8 +54,19 @@ void* my_sbrk_alloc(size_t size) {
         header_ptr->prev = current;
     }
     
-    printf("NEW CARV\n");
     return (void *) (header_ptr + 1);
+}
+
+void* my_calloc(size_t count, size_t size){
+    if (count == 0 || size == 0) return NULL;
+    if (size > SIZE_MASK / count) return NULL;  // overflow guard
+
+    size_t total = count * size;
+    void *ptr = my_malloc(total);
+    if (ptr == NULL) return NULL;
+
+    memset(ptr, 0, total);      // zero out the data from ptr up to a size of total
+    return ptr;
 }
 
 int size(void *payload_ptr) {
