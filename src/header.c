@@ -69,6 +69,68 @@ void* my_calloc(size_t count, size_t size){
     return ptr;
 }
 
+void* my_realloc(void* ptr, size_t new_size) {
+    if (ptr == NULL) return my_malloc(new_size);    // if they write my_realloc(NULL, size)
+    if (new_size == 0) {
+        my_free(ptr);
+        return NULL;
+    }
+
+    block_t *blk = ((block_t *) ptr) - 1;
+    size_t current_size = blk->size_and_flag & SIZE_MASK;
+
+    // for shrinking
+    if (new_size <= current_size) return ptr;
+
+    // growing in place
+    if (blk->next && (blk->next->size_and_flag & FREE_MASK)) {
+        size_t next_size = blk->next->size_and_flag & SIZE_MASK;
+        if (current_size + sizeof(block_t) + next_size >= new_size) {   // the sizeof(block_t) is because the new block has a header
+            blk->size_and_flag = new_size;  // updating the size
+            blk->next = blk->next->next;
+            if (blk->next) blk->next->prev = blk;
+            return ptr;
+        }
+    }
+    // growing backwards
+    if (blk->prev && (blk->prev->size_and_flag & FREE_MASK)) {
+        size_t prev_size = blk->prev->size_and_flag & SIZE_MASK;
+        if (prev_size + sizeof(block_t) + current_size >= new_size) {
+            block_t *prev = blk->prev;
+            memmove((void *)(prev + 1), ptr, current_size);
+            prev->size_and_flag = new_size;
+            prev->next = blk->next;
+            if (blk->next) blk->next->prev = prev;
+            return (void *)(prev + 1);
+        }
+    }
+    // if prev + current + next fits the new size
+    int has_prev = blk->prev && (blk->prev->size_and_flag & FREE_MASK);
+    int has_next = blk->next && (blk->next->size_and_flag & FREE_MASK);
+
+    if (has_prev && has_next) {
+        size_t prev_size = blk->prev->size_and_flag & SIZE_MASK;
+        size_t next_size = blk->next->size_and_flag & SIZE_MASK;
+        size_t total_size = prev_size + sizeof(block_t) + current_size + sizeof(block_t) + next_size;
+
+        if (total_size >= new_size) {
+            block_t *prev = blk->prev;
+            memmove((void *)(prev + 1), ptr, current_size);
+            prev->size_and_flag = new_size;
+            prev->next = blk->next->next;
+            if (prev->next) prev->next->prev = prev;
+            return (void *)(prev + 1);
+        }
+    }
+
+    //allocate new memory, copy from old and free the old
+    void *new_ptr = my_malloc(new_size);
+    if (new_ptr == NULL) return NULL;
+    memcpy(new_ptr, ptr, current_size);
+    my_free(ptr);
+    return new_ptr;
+}
+
 int size(void *payload_ptr) {
     block_t *header_ptr =   ((block_t *)payload_ptr) - 1;
     size_t total_size   =   header_ptr -> size_and_flag & SIZE_MASK;

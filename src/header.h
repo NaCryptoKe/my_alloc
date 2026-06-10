@@ -22,6 +22,7 @@ extern block_t *heap_head;
 
 void* my_malloc(size_t size);
 void* my_calloc(size_t count, size_t size);
+void* my_realloc(void* ptr, size_t new_size);
 int size(void *payload_ptr);
 int is_free(void *payload_ptr);
 uintptr_t mem();
