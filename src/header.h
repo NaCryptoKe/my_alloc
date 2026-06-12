@@ -6,10 +6,13 @@
 #include <stdint.h>         // for uintptr_t
 #include <unistd.h>         // for sbrk()
 #include <stdio.h>          // for perror()
+#include <string.h>
+#include <sys/mman.h>
 
 #define FREE_MASK 0x1
-#define SIZE_MASK (~(size_t)0x1)    // clears the lowest bit
-                                    
+#define SIZE_MASK (~(size_t)0x3)    // clears both flag bits
+
+#define MMAP_MASK 0x2
 typedef struct block {
     size_t size_and_flag;       // Stores both size and free flag to save space.
     struct block* prev;

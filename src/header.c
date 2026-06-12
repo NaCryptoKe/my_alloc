@@ -4,6 +4,19 @@ block_t *heap_head = NULL;
 
 void* my_malloc(size_t size) {
 
+    if (size >= 128 * 1024) {
+        void *map = mmap (  NULL, sizeof(block_t) + size,
+                            PROT_READ | PROT_WRITE,
+                            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+        if (map == MAP_FAILED)  return NULL;
+        block_t *blk = (block_t *)map;
+        blk->size_and_flag = size | MMAP_MASK;
+        blk->next = NULL;
+        blk->prev = NULL;
+
+        return (void *)(blk + 1);
+    }
     block_t *current = heap_head;
     while (current != NULL) {
         size_t  block_size  =   current -> size_and_flag & SIZE_MASK;
@@ -151,8 +164,13 @@ void my_free(void *payload_ptr) {
     if (payload_ptr == NULL)    return;
 
     block_t *blk         =   ((block_t *)payload_ptr) - 1;
-    blk->size_and_flag   =   blk->size_and_flag | FREE_MASK;
 
+    if (blk->size_and_flag & MMAP_MASK) {
+        munmap(blk, sizeof(block_t) + (blk->size_and_flag & SIZE_MASK));
+        return;
+    }
+
+    blk->size_and_flag   =   blk->size_and_flag | FREE_MASK;
     // forward coalescing
     if (blk -> next && (blk->next->size_and_flag & FREE_MASK)) {
         blk->size_and_flag += sizeof(block_t) + (blk->next->size_and_flag & SIZE_MASK);
