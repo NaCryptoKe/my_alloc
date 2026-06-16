@@ -25,8 +25,8 @@ void inspect_heap_layout() {
                (void*)current,
                (void*)(current + 1),
                size,
-               is_free ? "YES 🟢" : "NO 🔴",
-               is_mmap ? "mmap () 🟦" : "sbrk () 🟨");
+               is_free ? "YES" : "NO",
+               is_mmap ? "mmap ()" : "sbrk ()");
 
         // Verify explicit pointer synchronization sanity
         if (current->next) {
@@ -75,11 +75,11 @@ int main(void) {
     my_free(huge_ptr);
 
     // Executing Your Advanced Stress Test Sequence
-    printf("\n[Unit Test 3/3] Launching Your High-Load Structural Stress Test Suite...\n");
+    printf("\n[Unit Test 3/3] Launching High-Load Structural Stress Test Suite...\n");
     
     // Reset or execute on top of existing heap layout to check reuse capacity
     stress_test();
 
-    printf("\n✅ ALL ALLOCATOR LOGIC RUNS VERIFIED AND STRUCTURALLY SOUND!\n");
+    printf("\nALL ALLOCATOR LOGIC RUNS VERIFIED AND STRUCTURALLY SOUND!\n");
     return 0;
 }

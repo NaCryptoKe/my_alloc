@@ -6,6 +6,9 @@ import matplotlib
 # Force headless mode to silence interactive window warnings
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import os
+
+os.makedirs("plots", exist_ok=True)
 
 # Load datasets
 try:
@@ -42,5 +45,6 @@ ax.legend(loc="upper left")
 plt.tight_layout()
 
 # Save the artifact output directly to disk
-plt.savefig("report_calloc.svg", dpi=300)
+output_path = os.path.join("plots", "report_calloc.svg")
+plt.savefig(output_path, dpi=300)
 print("Analysis report generated successfully: 'report_calloc.svg'")

@@ -5,6 +5,9 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import os
+
+os.makedirs("plots", exist_ok=True)
 
 try:
     df = pd.read_csv("benchmark_results.csv")
@@ -33,5 +36,8 @@ ax.text(0.75, 0.60, stats, transform=ax.transAxes, bbox=dict(facecolor='white', 
 
 ax.legend(loc="upper left")
 plt.tight_layout()
-plt.savefig("report_realloc.svg", dpi=300)
+
+
+output_path = os.path.join("plots", "report_realloc.svg")
+plt.savefig(output_path, dpi=300)
 print("Analysis report generated successfully: 'report_realloc.svg'")

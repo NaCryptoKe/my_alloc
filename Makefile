@@ -30,7 +30,7 @@ $(BIN_DIR)/$(TARGET_MAIN): $(SRC_DIR)/header.c $(SRC_DIR)/main.c | $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 # Compilation recipe for the stress-test binary
-$(BIN_DIR)/$(TARGET_TEST): $(SRC_DIR)/header.c $(SRC_DIR)/test.c | $(BIN_DIR)
+$(BIN_DIR)/$(TARGET_TEST): $(SRC_DIR)/header.c $(SRC_DIR)/test.c $(SRC_DIR)/test_main.c| $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 # Direct directory generation rule to prevent missing-path faults
@@ -39,7 +39,7 @@ $(BIN_DIR):
 
 # Executes the Python/uv telemetry parsing layer
 plot:
-	uv run run_plots.py
+	uv run plot.py
 
 # Complete cleanup rule
 clean:

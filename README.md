@@ -94,28 +94,28 @@ Measurements are compiled from 1,000 distinct allocation, mutation, and dealloca
 
 #### 1. Allocation Performance (`my_malloc`)
 
-![Malloc Performance](./src/report_malloc.svg)
+![Malloc Performance](./plots/report_malloc.svg)
 
 * **Analysis:** `my_malloc` processes requests at an average speed of `5,003.4 ns` compared to Glibc's `92.5 ns`.
 * **Architectural Trade-offs:** The disparity stems from the underlying algorithmic layout. Because our allocator uses a basic First-Fit model mapped to a single list, finding an available node requires an $\mathcal{O}(N)$ pointer traversal from `heap_head`. Furthermore, when no reusable block is available, the append strategy traverses the *entire list again* to locate the list tail before extending the program break with `sbrk()`. Glibc circumvents this entirely by utilizing segregated free lists ("bins") mapped via bitmasks to locate optimal size blocks in constant $\mathcal{O}(1)$ time.
 
 #### 2. Deallocation Optimization (`free`)
 
-![Free Performance](./src/report_free.svg)
+![Free Performance](./plots/report_free.svg)
 
 * **Analysis:** `my_free` registers an exceptional runtime of `37.8 ns`, executing **twice as fast** as Glibc's `73.6 ns`.
 * **Architectural Trade-offs:** This optimization highlights the efficiency of the explicit boundary-tag configuration. Because every chunk header maintains explicit bidirectional pointers (`prev` and `next`), the allocator look up raw metadata tags using pointer arithmetic and modifies active bitmasks in strict $\mathcal{O}(1)$ time. Coalescing occurs entirely inline via pointer swaps without searching or structural sorting. Glibc incurs overhead here because it cannot simply leave a freed node inside a unified space; it must route freed segments into tiered caching layers or global bins.
 
 #### 3. Initialization Performance (`my_calloc`)
 
-![Calloc Performance](./src/report_calloc.svg)
+![Calloc Performance](./plots/report_calloc.svg)
 
 * **Analysis:** Glibc completes initialization cycles in `78.4 ns` vs our allocator's `1,611.9 ns`.
 * **Architectural Trade-offs:** Our `my_calloc` relies on a multi-step routine: it first calls `my_malloc` (inheriting its full linear search traversal costs) and then applies `memset()` across the payload space to zero out memory. Glibc leverages kernel-level optimization flags. When allocating memory through kernel page mappings, the operating system guarantees the fresh virtual frames are pre-zeroed for isolation and security reasons. Glibc identifies this internal state and bypasses the `memset` clearing cycle entirely.
 
 #### 4. Resizing Performance (`my_realloc`)
 
-![Realloc Performance](./src/report_realloc.svg)
+![Realloc Performance](./plots/report_realloc.svg)
 
 * **Analysis:** Glibc handles resizing in `132.9 ns` compared to our allocator's `3,957.1 ns`.
 * **Architectural Trade-offs:** While our implementation features optimization logic for bidirectional in-place growth (coalescing free neighbor nodes via `has_prev` and `has_next`), it must fall back to a full migration sequence whenever a block is completely locked by surrounding boundaries. This fallback triggers a new `my_malloc` call, a full data migration using `memcpy()`, and a `my_free` call, reintroducing linear search bottlenecks.

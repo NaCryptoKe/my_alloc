@@ -3,12 +3,13 @@
 # ///
 import subprocess
 import sys
+import os
 
 scripts = [
-    "plot_malloc.py",
-    "plot_free.py",
-    "plot_realloc.py",
-    "plot_calloc.py"
+    os.path.join("src", "plot_malloc.py"),
+    os.path.join("src", "plot_free.py"),
+    os.path.join("src", "plot_realloc.py"),
+    os.path.join("src", "plot_calloc.py")
 ]
 
 print("🚀 Starting allocator visual report generation...")
